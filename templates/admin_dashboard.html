@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Appointments · Medislot Admin{% endblock %}
+
+{% block content %}
+<div class="dash-head">
+  <div>
+    <p class="hero-eyebrow">Admin Dashboard</p>
+    <h1>Appointments</h1>
+    <p class="hero-sub">{{ appointments|length }} appointment{{ '' if appointments|length == 1 else 's' }} on record.</p>
+  </div>
+  <a href="{{ url_for('admin_logout') }}" class="btn btn-ghost">Log Out</a>
+</div>
+
+<div class="card table-card">
+  {% if appointments %}
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Patient</th>
+          <th>Age / Gender</th>
+          <th>Mobile</th>
+          <th>Email</th>
+          <th>Department</th>
+          <th>Doctor</th>
+          <th>Doctor Exp.</th>
+          <th>Date</th>
+          <th>Time Slot</th>
+          <th>Mode</th>
+          <th>Symptoms</th>
+          <th>Fee (₹)</th>
+          <th>Payment</th>
+          <th>Report</th>
+          <th>Booked On</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td>{{ a['id'] }}</td>
+          <td>{{ a['full_name'] }}</td>
+          <td>{{ a['age'] }} / {{ a['gender'] }}</td>
+          <td>{{ a['mobile'] }}</td>
+          <td>{{ a['email'] }}</td>
+          <td>{{ a['department'] }}</td>
+          <td>{{ a['doctor'] }}</td>
+          <td>{{ a['doctor_experience'] }} yrs</td>
+          <td>{{ a['appointment_date'] }}</td>
+          <td>{{ a['time_slot'] }}</td>
+          <td><span class="badge">{{ a['consultation_mode'] }}</span></td>
+          <td class="truncate">{{ a['symptoms'] }}</td>
+          <td>{{ a['consultation_fee'] }}</td>
+          <td>{{ a['payment_method'] }}</td>
+          <td>
+            {% if a['report_filename'] %}
+              <span class="badge badge-muted">{{ a['report_filename'] }}</span>
+            {% else %}
+              —
+            {% endif %}
+          </td>
+          <td>{{ a['created_at'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>No appointments have been booked yet.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

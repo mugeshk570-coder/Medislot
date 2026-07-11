@@ -1,0 +1,286 @@
+{% extends 'base.html' %}
+{% block title %}Book an Appointment · Medislot{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <p class="hero-eyebrow">Online Doctor Appointment</p>
+  <h1>Book your visit in six quick pages</h1>
+  <p class="hero-sub">Tell us about you, pick a doctor and a time that works, and we'll take care of the rest.</p>
+</div>
+
+<div class="step-progress" id="step-progress">
+  {% for label in ['Patient', 'Doctor', 'Schedule', 'Health', 'Payment', 'Confirm'] %}
+  <div class="step-dot" data-step-index="{{ loop.index0 }}">
+    <span class="num">{{ '%02d' % loop.index }}</span>
+    <span class="label">{{ label }}</span>
+  </div>
+  {% if not loop.last %}<span class="step-connector"></span>{% endif %}
+  {% endfor %}
+</div>
+
+<form class="card form-card" id="booking-form" method="POST" enctype="multipart/form-data" novalidate>
+
+  <section class="fgroup active" data-page="1">
+    <div class="fgroup-head">
+      <span class="fgroup-num">01</span>
+      <h2>Patient Details</h2>
+    </div>
+    <div class="fgrid">
+      <label class="field">
+        <span>Full Name <em>*</em></span>
+        <input type="text" name="full_name" value="{{ form.full_name or '' }}" placeholder="e.g. Priya Ramesh" required>
+      </label>
+      <label class="field field-sm">
+        <span>Age <em>*</em></span>
+        <input type="number" name="age" min="0" max="120" value="{{ form.age or '' }}" placeholder="Years" required>
+      </label>
+      <div class="field field-sm">
+        <span>Gender <em>*</em></span>
+        <div class="pill-group">
+          <label class="pill"><input type="radio" name="gender" value="Male" required {% if form.gender == 'Male' %}checked{% endif %}> Male</label>
+          <label class="pill"><input type="radio" name="gender" value="Female" {% if form.gender == 'Female' %}checked{% endif %}> Female</label>
+          <label class="pill"><input type="radio" name="gender" value="Other" {% if form.gender == 'Other' %}checked{% endif %}> Other</label>
+        </div>
+      </div>
+      <label class="field">
+        <span>Mobile Number <em>*</em></span>
+        <input type="tel" name="mobile" value="{{ form.mobile or '' }}" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
+      </label>
+      <label class="field">
+        <span>Email ID</span>
+        <input type="email" name="email" value="{{ form.email or '' }}" placeholder="you@example.com">
+      </label>
+      <label class="field field-full">
+        <span>Address</span>
+        <textarea name="address" rows="2" placeholder="House no, street, city, pincode">{{ form.address or '' }}</textarea>
+      </label>
+    </div>
+  </section>
+
+  <section class="fgroup" data-page="2">
+    <div class="fgroup-head">
+      <span class="fgroup-num">02</span>
+      <h2>Doctor Selection</h2>
+    </div>
+    <div class="fgrid">
+      <div class="field field-full">
+        <span>Department <em>*</em></span>
+        <div class="chip-group" id="department-group">
+          {% for dept in departments %}
+          <label class="chip">
+            <input type="radio" name="department" value="{{ dept }}" required
+              {% if form.department == dept %}checked{% endif %}
+              onclick="updateDoctors('{{ dept }}')">
+            {{ dept }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <label class="field field-full">
+        <span>Select Doctor <em>*</em></span>
+        <select name="doctor" id="doctor-select" required onchange="updateFee()">
+          <option value="">Choose a department first</option>
+        </select>
+      </label>
+      <div class="field field-sm">
+        <span>Years of Experience</span>
+        <input type="text" id="doctor-experience-display" readonly placeholder="Select a doctor">
+      </div>
+      <div class="field field-sm">
+        <span>Consultation Fee (₹) — auto-filled</span>
+        <input type="text" id="fee-preview" readonly placeholder="Select a doctor">
+      </div>
+    </div>
+  </section>
+
+  <section class="fgroup" data-page="3">
+    <div class="fgroup-head">
+      <span class="fgroup-num">03</span>
+      <h2>Appointment Details</h2>
+    </div>
+    <div class="fgrid">
+      <label class="field">
+        <span>Appointment Date <em>*</em></span>
+        <input type="date" name="appointment_date" value="{{ form.appointment_date or '' }}" required>
+      </label>
+      <div class="field field-full">
+        <span>Mode of Consultation <em>*</em></span>
+        <div class="pill-group">
+          <label class="pill"><input type="radio" name="consultation_mode" value="In-Person" required {% if form.consultation_mode == 'In-Person' %}checked{% endif %}> In-Person</label>
+          <label class="pill"><input type="radio" name="consultation_mode" value="Video Consultation" {% if form.consultation_mode == 'Video Consultation' %}checked{% endif %}> Video Consultation</label>
+        </div>
+      </div>
+      <div class="field field-full">
+        <span>Preferred Time Slot <em>*</em></span>
+        <div class="chip-group">
+          {% for slot in time_slots %}
+          <label class="chip">
+            <input type="radio" name="time_slot" value="{{ slot }}" required {% if form.time_slot == slot %}checked{% endif %}>
+            {{ slot }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fgroup" data-page="4">
+    <div class="fgroup-head">
+      <span class="fgroup-num">04</span>
+      <h2>Health Information</h2>
+    </div>
+    <div class="fgrid">
+      <label class="field field-full">
+        <span>Symptoms / Problem</span>
+        <textarea name="symptoms" rows="3" placeholder="Briefly describe what's bothering you">{{ form.symptoms or '' }}</textarea>
+      </label>
+      <label class="field field-full">
+        <span>Previous Medical History (if any)</span>
+        <textarea name="medical_history" rows="2" placeholder="Allergies, ongoing medication, past conditions">{{ form.medical_history or '' }}</textarea>
+      </label>
+      <label class="field field-full">
+        <span>Upload Reports (optional)</span>
+        <input type="file" name="report_file" class="file-input">
+      </label>
+    </div>
+  </section>
+
+  <section class="fgroup" data-page="5">
+    <div class="fgroup-head">
+      <span class="fgroup-num">05</span>
+      <h2>Payment Details</h2>
+    </div>
+    <div class="fgrid">
+      <label class="field field-sm">
+        <span>Consultation Fee (₹)</span>
+        <input type="text" name="consultation_fee" id="consultation_fee" readonly placeholder="Select a doctor on page 02" value="{{ form.consultation_fee or '' }}">
+        <span class="field-hint">Set automatically from the doctor you chose.</span>
+      </label>
+      <div class="field field-full">
+        <span>Payment Method</span>
+        <div class="pill-group">
+          <label class="pill"><input type="radio" name="payment_method" value="UPI" {% if form.payment_method == 'UPI' %}checked{% endif %}> UPI</label>
+          <label class="pill"><input type="radio" name="payment_method" value="Credit/Debit Card" {% if form.payment_method == 'Credit/Debit Card' %}checked{% endif %}> Credit/Debit Card</label>
+          <label class="pill"><input type="radio" name="payment_method" value="Net Banking" {% if form.payment_method == 'Net Banking' %}checked{% endif %}> Net Banking</label>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="fgroup" data-page="6">
+    <div class="fgroup-head">
+      <span class="fgroup-num">06</span>
+      <h2>Confirmation</h2>
+    </div>
+
+    <div class="terms-bar" id="terms-bar">
+      {% include '_terms_content.html' %}
+    </div>
+
+    <label class="checkline">
+      <input type="checkbox" name="terms" required>
+      <span>I agree to the <a href="{{ url_for('terms') }}" target="_blank" class="terms-link">terms &amp; conditions</a> above.</span>
+    </label>
+  </section>
+
+  <div class="wizard-nav">
+    <button type="button" class="btn btn-ghost" id="btn-back" onclick="goStep(-1)">Back</button>
+    <div class="right-group">
+      <button type="reset" class="btn btn-ghost" id="btn-reset">Reset Form</button>
+      <button type="button" class="btn btn-primary" id="btn-next" onclick="goStep(1)">Next</button>
+      <button type="submit" class="btn btn-primary" id="btn-submit" style="display:none;">Book Appointment</button>
+    </div>
+  </div>
+</form>
+
+<script>
+  const doctorsByDept = {{ doctors|tojson }};
+  const selectedDoctor = "{{ form.doctor or '' }}";
+
+  function updateDoctors(dept) {
+    const select = document.getElementById('doctor-select');
+    select.innerHTML = '';
+    const doctors = doctorsByDept[dept] || [];
+    if (doctors.length === 0) {
+      select.innerHTML = '<option value="">No doctors available</option>';
+      return;
+    }
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Select a doctor';
+    select.appendChild(placeholder);
+    doctors.forEach(function (doc) {
+      const opt = document.createElement('option');
+      opt.value = doc.name;
+      opt.textContent = doc.name + ' — ' + doc.experience + ' yrs exp — ₹' + doc.fee;
+      opt.dataset.fee = doc.fee;
+      opt.dataset.experience = doc.experience;
+      if (doc.name === selectedDoctor) opt.selected = true;
+      select.appendChild(opt);
+    });
+    updateFee();
+  }
+
+  function updateFee() {
+    const select = document.getElementById('doctor-select');
+    const opt = select.options[select.selectedIndex];
+    const fee = (opt && opt.dataset.fee) ? opt.dataset.fee : '';
+    const experience = (opt && opt.dataset.experience) ? opt.dataset.experience : '';
+    document.getElementById('fee-preview').value = fee ? ('₹' + fee) : '';
+    document.getElementById('doctor-experience-display').value = experience ? (experience + ' years') : '';
+    document.getElementById('consultation_fee').value = fee;
+  }
+
+  // Restore department/doctor selection after a validation error
+  const checkedDept = document.querySelector('input[name="department"]:checked');
+  if (checkedDept) updateDoctors(checkedDept.value);
+
+  // Prevent past dates
+  document.querySelector('input[name="appointment_date"]').min = new Date().toISOString().split('T')[0];
+
+  // ---------- Multi-page wizard ----------
+  const pages = Array.from(document.querySelectorAll('.fgroup'));
+  const dots = Array.from(document.querySelectorAll('.step-dot'));
+  let current = 0;
+
+  function renderStep() {
+    pages.forEach((p, i) => p.classList.toggle('active', i === current));
+    dots.forEach((d, i) => {
+      d.classList.toggle('active', i === current);
+      d.classList.toggle('done', i < current);
+    });
+    document.getElementById('btn-back').style.visibility = current === 0 ? 'hidden' : 'visible';
+    document.getElementById('btn-next').style.display = current === pages.length - 1 ? 'none' : 'inline-flex';
+    document.getElementById('btn-submit').style.display = current === pages.length - 1 ? 'inline-flex' : 'none';
+    document.getElementById('booking-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function currentPageValid() {
+    const inputs = pages[current].querySelectorAll('input, select, textarea');
+    for (const el of inputs) {
+      if (!el.checkValidity()) {
+        el.reportValidity();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function goStep(dir) {
+    if (dir > 0 && !currentPageValid()) return;
+    const next = current + dir;
+    if (next < 0 || next >= pages.length) return;
+    current = next;
+    renderStep();
+  }
+
+  dots.forEach((d, i) => {
+    d.style.cursor = 'pointer';
+    d.addEventListener('click', () => {
+      if (i <= current) { current = i; renderStep(); }
+    });
+  });
+
+  renderStep();
+</script>
+{% endblock %}

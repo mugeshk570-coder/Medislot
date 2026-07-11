@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Terms & Conditions · Medislot{% endblock %}
+
+{% block content %}
+<div class="hero">
+  <p class="hero-eyebrow">Legal</p>
+  <h1>Terms &amp; Conditions</h1>
+  <p class="hero-sub">Please read these terms carefully before booking an appointment through Medislot.</p>
+</div>
+
+<div class="card terms-card">
+  <p class="terms-updated">Last updated: July 2026</p>
+
+  {% include '_terms_content.html' %}
+
+  <a href="{{ url_for('index') }}" class="btn btn-primary terms-back">Back to Booking Form</a>
+</div>
+{% endblock %}
