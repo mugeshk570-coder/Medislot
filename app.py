@@ -1,16 +1,25 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import sqlite3
 import os
+import tempfile
 from datetime import datetime
 from werkzeug.utils import secure_filename
+
 
 app = Flask(__name__)
 app.secret_key = 'medislot-dev-secret-key-change-this-in-production'
 
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, 'medislot.db')
-UPLOAD_FOLDER = os.path.join(BASE_DIR, 'uploads')
+
+# SQLite database in writable temporary directory
+DB_PATH = "/tmp/medislot.db"
+
+# Upload folder in writable temporary directory
+UPLOAD_FOLDER = "/tmp/uploads"
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
 
@@ -67,7 +76,7 @@ def get_db():
 
 def init_db():
     conn = get_db()
-    conn.execute('''
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             full_name TEXT NOT NULL,
@@ -89,11 +98,16 @@ def init_db():
             payment_method TEXT,
             created_at TEXT
         )
-    ''')
+    """)
     conn.commit()
     conn.close()
 
 
+@app.before_request
+def initialize_database():
+    init_db()
+
+    
 @app.route('/terms')
 def terms():
     return render_template('terms.html')
@@ -157,6 +171,7 @@ def index():
         conn.commit()
         conn.close()
 
+
         flash('Your appointment has been booked. We will contact you shortly to confirm.', 'success')
         return redirect(url_for('index'))
 
@@ -200,6 +215,6 @@ def admin_logout():
     return redirect(url_for('admin_login'))
 
 
+
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True)
